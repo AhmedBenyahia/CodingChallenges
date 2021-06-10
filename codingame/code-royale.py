@@ -1,7 +1,8 @@
 import sys
 import math
+import random
 
-# Code Royal Puzzle Wood League 2 3rd #
+# Code Royal Puzzle Wood League 1 62rd #
 
 num_sites = int(input())
 sites, sitesIds = {}, []
@@ -11,11 +12,11 @@ for i in range(num_sites):
     site_id, x, y, radius = [int(j) for j in input().split()]
     sites[site_id] = (x, y, radius)
     sitesIds.append(site_id)
-    print("site_id: %s, (%s, %s), r: %s" % (site_id, x, y, radius), file=sys.stderr, flush=True)
+    # print("site_id: %s, (%s, %s), r: %s" % (site_id, x, y, radius), file=sys.stderr, flush=True)
 # Prepare for game
 # Sort site by distance
 sites = dict(sorted(sites.items(), key=lambda item: math.dist([item[1][0], item[1][1]], [queenX, queenY])))
-print("sites: %s" % (sites.items()), file=sys.stderr, flush=True)
+# print("sites: %s" % (sites.items()), file=sys.stderr, flush=True)
 
 # game loop
 while True:
@@ -39,23 +40,39 @@ while True:
     # Unit info
     num_units = int(input())
     knight, archer = 0, 0
+    closestEnemy = []
+    minD = 2000
     for i in range(num_units):
         # unit_type: -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
         x, y, owner, unit_type, health = [int(j) for j in input().split()]
         if owner == 0 and unit_type == 0: knight += 1
         if owner == 0 and unit_type == 1: archer += 1
-        if unit_type == -1 and owner == 0: queenX, queenY = x, y
-        print("unit: %s" % (unit_type == -1 and owner == 0), file=sys.stderr, flush=True)
+        if unit_type == -1 and owner == 0:
+            queenX, queenY = x, y
+        else:
+            m = math.dist([x, y], [queenX, queenY])
+            if m < minD:
+                minD = m
+                closestEnemy = [x, y]
+
+    print("distance to closest enemy: ", minD, file=sys.stderr, flush=True)
 
     # sort sites base on distance 
     sites = dict(sorted(sites.items(), key=lambda item: math.dist([item[1][0], item[1][1]], [queenX, queenY])))
 
     # Queen action
-    print("sites: %s" % (sites.items()), file=sys.stderr, flush=True)
-    if barKnight + barArcher < 2:
+    runX, runY = 0, 0
+    if minD <= 80:
+        if closestEnemy[0] > queenX: runX = -60 
+        elif closestEnemy[0] < queenX: runX = 60
+        if closestEnemy[1] > queenY: runY = -60
+        elif closestEnemy[1] < queenY: runY = 60 
+        print('MOVE %s %s' % (queenX + runX, queenY + runY))
+        # Only build one knight barracks
+    elif barKnight < 1:
         goTo = [[y[0], y[1]] for x, y in sites.items() if y[3] == -1][0]
         move = 'MOVE ' + str(goTo[0]) + ' ' + str(goTo[1])
-        build = 'BUILD ' + str(touched_site) + ' BARRACKS-' + ['KNIGHT', 'ARCHER'][barKnight > 0]
+        build = 'BUILD ' + str(touched_site) + ' BARRACKS-KNIGHT'
         print([move, build][touched_site > -1 and sites[touched_site][3] == -1])
     else:
         goTo = [[y[0], y[1]] for x, y in sites.items() if y[3] == -1]
@@ -68,13 +85,9 @@ while True:
             print('WAIT')
     # Second line: A set of training instructions
     training = []
-    if gold >= 100 and knight >= 8:
-        s = [[x] for x, y in ownedStruct.items() if y[6] == 1]
-        if len(s) > 0: training.append(s[0][0])
-        gold = gold - 100
-    if gold >= 80 and inTrainKnight == 0 and knight < 8:
+    if gold >= 80 and inTrainKnight == 0:
         s = [[x] for x, y in ownedStruct.items() if y[6] == 0]
-        print(*s, file=sys.stderr, flush=True)
+        # print(*s, file=sys.stderr, flush=True)
         if len(s) > 0: training.append(s[0][0])
         gold = gold - 80
 
