@@ -22,7 +22,7 @@ sites = dict(sorted(sites.items(), key=lambda item: math.dist([item[1][0], item[
 while True:
     # touched_site: -1 if none
     gold, touched_site = [int(i) for i in input().split()]
-    barKnight, barArcher = 0, 0
+    barKnight, barArcher, mine, tower = 0, 0, 0, 0
     inTrainKnight, inTrainArcher = 0, 0
     # Structure info
     for i in range(num_sites):
@@ -34,6 +34,8 @@ while True:
         if owner == 0: ownedStruct[site_id] = sites[site_id]
         if owner == 0 and structure_type == 2 and param_2 == 0: barKnight += 1
         if owner == 0 and structure_type == 2 and param_2 == 1: barArcher += 1
+        if owner == 0 and structure_type == 0: mine += 1
+        if owner == 0 and structure_type == 1: tower += 1
         if owner == 0 and structure_type == 2 and param_2 == 0 and param_1 > 0: inTrainKnight += 1
         if owner == 0 and structure_type == 2 and param_2 == 1 and param_1 > 0: inTrainArcher += 1
 
@@ -47,32 +49,44 @@ while True:
         x, y, owner, unit_type, health = [int(j) for j in input().split()]
         if owner == 0 and unit_type == 0: knight += 1
         if owner == 0 and unit_type == 1: archer += 1
+        # save the queen current position
         if unit_type == -1 and owner == 0:
             queenX, queenY = x, y
-        else:
+        elif owner == 1:
+            # calculate distance between enemy unit and our queen
+            # save the closes enemy unit coordination
+            # Note: error +- 60 because there is a possibility we use an old queen coordination
             m = math.dist([x, y], [queenX, queenY])
             if m < minD:
                 minD = m
                 closestEnemy = [x, y]
 
     print("distance to closest enemy: ", minD, file=sys.stderr, flush=True)
+    print("number of mines:", mine, file=sys.stderr, flush=True)
+    print("number of tower:", tower, file=sys.stderr, flush=True)
 
     # sort sites base on distance 
     sites = dict(sorted(sites.items(), key=lambda item: math.dist([item[1][0], item[1][1]], [queenX, queenY])))
 
     # Queen action
+    # TODO: Improve mine building to select good mine and closest one
     runX, runY = 0, 0
     if minD <= 80:
-        if closestEnemy[0] > queenX: runX = -60 
+        if closestEnemy[0] > queenX: runX = -60
         elif closestEnemy[0] < queenX: runX = 60
         if closestEnemy[1] > queenY: runY = -60
-        elif closestEnemy[1] < queenY: runY = 60 
+        elif closestEnemy[1] < queenY: runY = 60
         print('MOVE %s %s' % (queenX + runX, queenY + runY))
         # Only build one knight barracks
     elif barKnight < 1:
         goTo = [[y[0], y[1]] for x, y in sites.items() if y[3] == -1][0]
         move = 'MOVE ' + str(goTo[0]) + ' ' + str(goTo[1])
         build = 'BUILD ' + str(touched_site) + ' BARRACKS-KNIGHT'
+        print([move, build][touched_site > -1 and sites[touched_site][3] == -1])
+    elif (mine + tower) % 2 == 0:
+        goTo = [[y[0], y[1]] for x, y in sites.items() if y[3] == -1][0]
+        move = 'MOVE ' + str(goTo[0]) + ' ' + str(goTo[1])
+        build = 'BUILD ' + str(touched_site) + ' MINE'
         print([move, build][touched_site > -1 and sites[touched_site][3] == -1])
     else:
         goTo = [[y[0], y[1]] for x, y in sites.items() if y[3] == -1]
